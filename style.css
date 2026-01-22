@@ -1,0 +1,16 @@
+:root {
+  --bg-color: rgb(45, 45, 45);
+  --text-color: black;
+  --accent-color: rgb(255, 208, 0);
+  --track-color: rgb(255,208,0);
+  --pulley: rgb(120,120,120);
+}
+
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  font-family: "Montserrat", sans-serif;
+    
+}
