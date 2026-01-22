@@ -1,4 +1,7 @@
 
+// -----------------------------------------------------
+// CANVAS SETUP
+// -----------------------------------------------------
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 
@@ -17,15 +20,67 @@ turret_img.src = "turret.png";
 const keysPressed = {};
 
 function angleBetweenPoints(x1, y1, x2, y2) {
-    return Math.atan2(y2 - y1, x2 - x1); 
+    return Math.atan2(y2 - y1, x2 - x1); // radians
 }
 
+function applyDeadzone(value, deadzone = 0.1) {
+    return Math.abs(value) < deadzone ? 0 : value;
+}
 
 
 document.addEventListener('keydown', (event) => {
     keysPressed[event.key] = true;
-    console.log(keysPressed);
+   
 });
+window.addEventListener("gamepadconnected", (e) => {
+  console.log(
+    "Gamepad connected at index %d: %s. %d buttons, %d axes.",
+    e.gamepad.index,
+    e.gamepad.id,
+    e.gamepad.buttons.length,
+    e.gamepad.axes.length,
+  );
+});
+window.addEventListener("gamepaddisconnected", (e) => {
+  console.log(
+    "Gamepad disconnected from index %d: %s",
+    e.gamepad.index,
+    e.gamepad.id,
+  );
+});
+
+const gamepads = {};
+
+function gamepadHandler(event, connected) {
+  const gamepad = event.gamepad;
+  // Note:
+  // gamepad === navigator.getGamepads()[gamepad.index]
+
+  if (connected) {
+    gamepads[gamepad.index] = gamepad;
+  } else {
+    delete gamepads[gamepad.index];
+  }
+}
+
+window.addEventListener("gamepadconnected", (e) => {
+  gamepadHandler(e, true);
+});
+window.addEventListener("gamepaddisconnected", (e) => {
+  gamepadHandler(e, false);
+});
+
+window.addEventListener("gamepadconnected", (e) => {
+  const gp = navigator.getGamepads()[e.gamepad.index];
+  console.log(
+    "Gamepad connected at index %d: %s. %d buttons, %d axes.",
+    gp.index,
+    gp.id,
+    gp.buttons.length,
+    gp.axes.length,
+  );
+});
+
 
 function pointFromDistanceAndAngle(x0, y0, distance, angleDeg) {
     const angleRad = angleDeg * (Math.PI / 180);
@@ -67,10 +122,12 @@ function drawCircle(ctx, x, y, radius, fillColor = 'white', strokeColor = 'black
     ctx.closePath();
 }
 
+var field_width = canvas.width;
+
 
 var x = (canvas.width-canvas.height)/2
 var y = 0
-var robot_wdith = canvas.height/8;
+var robot_wdith =field_width/8;
 
 var vecy = 0
 var vecx = 0
@@ -86,6 +143,22 @@ amount = 0.6
 rotation_amount = 0.006;
 
 function update() {
+    const pads = navigator.getGamepads();
+    const gp = pads[0]; // first connected controller
+
+    if (gp) {
+        // Left stick = movement
+        const lx = applyDeadzone(gp.axes[0]);
+        const ly = applyDeadzone(gp.axes[1]);
+
+        vecx += lx * amount;
+        vecy += ly * amount;
+
+        // Right stick X = rotation
+        const rx = applyDeadzone(gp.axes[2]);
+        rotation -= rx * rotation_amount ;
+    }
+    
 
     var outer = (outerSquareSide(robot_wdith, angle)-robot_wdith)/2
 
@@ -140,26 +213,28 @@ function update() {
 
 
 
-    if (x<(canvas.width-canvas.height)/2 + outer){
-        x = (canvas.width-canvas.height)/2 + outer;
-        vecx = 0;
-    }
-    else if (x>(canvas.width-canvas.height)/2+ canvas.height - robot_wdith - outer){
-        x = (canvas.width-canvas.height)/2 + canvas.height - robot_wdith - outer;
-        vecx = 0;
-    }
-
+   var bounce = 0.8
     if (y< outer){
         y = outer
-        vecy = 0
-    } else if (y > canvas.height-outer){
-        y = canvas.height-outer;
-        vecy = 0;
+        vecy *= -bounce
+    } else if (y > canvas.height-outer-robot_wdith){
+        y = canvas.height-outer-robot_wdith;
+        vecy *= -bounce
+    }
+
+    if (x< outer){
+        x = outer
+        vecx *= -bounce
+    } else if (x > canvas.width-outer-robot_wdith){
+        x = canvas.width-outer-robot_wdith;
+        vecx *= -bounce
     }
 
 
 
     turret = pointFromDistanceAndAngle(x+robot_wdith/2, y+robot_wdith/2, 29, turret_angle+radToDeg(angle))
+
+    
 
     
    
@@ -171,7 +246,7 @@ function update() {
 // Draw function
 function draw() {
   
-    c.drawImage(field,(canvas.width-canvas.height)/2,0, canvas.height, canvas.height);
+    c.drawImage(field,0,0, field_width, field_width);
 
      // Calculate the robot's center
     const centerX = x + robot_wdith / 2;
@@ -195,16 +270,20 @@ function draw() {
     c.restore();
 
     
-    turretAngle = angleBetweenPoints(turret.x, turret.y, (canvas.width-canvas.height)/2 , 0) - Math.PI/2
+    turretAngle = angleBetweenPoints(turret.x, turret.y, 30 , 30) - Math.PI/2
 
     const turretCenterX = turret.x;
     const turretCenterY = turret.y;
+
+   
 
     c.save();
     c.translate(turretCenterX, turretCenterY);
     c.rotate(turretAngle); // turret rotation in radians
     c.drawImage(turret_img, -turretwid / 2, -turretwid / 2, turretwid, turretwid);
     c.restore();
+
+  
 
   
 
