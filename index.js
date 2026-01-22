@@ -156,7 +156,7 @@ function update() {
 
         // Right stick X = rotation
         const rx = applyDeadzone(gp.axes[2]);
-        rotation -= rx * rotation_amount ;
+        rotation -= rx * rotation_amount*-1 ;
     }
     
 
