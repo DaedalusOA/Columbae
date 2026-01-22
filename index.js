@@ -232,7 +232,7 @@ function update() {
 
 
 
-    turret = pointFromDistanceAndAngle(x+robot_wdith/2, y+robot_wdith/2, 29, turret_angle+radToDeg(angle))
+    turret = pointFromDistanceAndAngle(x+robot_wdith/2, y+robot_wdith/2, 29*2, turret_angle+radToDeg(angle))
 
     
 
